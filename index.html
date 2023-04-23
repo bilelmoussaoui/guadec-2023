@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+	<title>Integrate Flatpak to your favorite IDE</title>
+
+	<link rel="stylesheet" href="dist/reset.css">
+	<link rel="stylesheet" href="dist/reveal.css">
+	<link rel="stylesheet" href="dist/theme/night.css">
+	<link rel="stylesheet" href="plugin/highlight/atom-one-dark-reasonable.min.css">
+</head>
+
+<body>
+	<div class="reveal">
+		<div class="slides">
+			<section>
+				<h3>Integrate Flatpak to your favorite IDE</h3>
+				<span>Bilal Elmoussaoui <a href="mailto:bil.elmoussaoui@gmail.com">bil.elmoussaoui@gmail.com</a></span>
+			</section>
+			<section>
+				<section>
+					<h3>The Story</h3>
+				</section>
+				<section>
+					<center>
+						<div style="width:720px;max-width:100%;">
+							<div style="height:0;padding-bottom:56.67%;position:relative;"><iframe width="360"
+									height="204" style="position:absolute;top:0;left:0;width:100%;height:100%;"
+									frameBorder="0" src="https://imgflip.com/embed/7fm4s"></iframe></div>
+						</div>
+					</center>
+				</section>
+			</section>
+			<section>
+				<section>
+					<h3>The Process</h3>
+				</section>
+				<section>
+					<h5>Detect and parse the manifest</h5>
+					<br />
+
+					<ul>
+						<li>JSON or YAML files</li>
+						<li>Conforms to <a
+								href="https://github.com/flatpak/flatpak-builder/blob/main/data/flatpak-manifest.schema.json">Flatpak
+								Builder scheme</a></li>
+						<li>Contains at least the <code>id</code> and <code>modules</code> attributes</li>
+					</ul>
+				</section>
+				<section>
+					<h5>Check if the required SDKs are installed</h5>
+					<br />
+					<ul>
+						<li>Ideally offer to install them for the user</li>
+						<li>Complexity of handling <code>--user</code> and <code>--system</code> installations</li>
+					</ul>
+					<pre>
+						<code class="language-bash">flatpak list --runtime --columns=application,branch</code>
+					</pre>
+				</section>
+				<section>
+					<h5>Initialize the Flatpak repository</h5>
+					<br />
+					<pre>
+						<code class="language-bash">flatpak build-init $repoDir $appID $SDK \
+				$runtime $runtimeVersion</code>
+					</pre>
+
+				</section>
+				<section>
+					<h5>Update and build dependencies</h5>
+					<br />
+
+					<ul>
+						<li>Assume the latest module is the application</li>
+						<li>Make use of <code>--stop-at=$module</code></li>
+						<li>Allow to run any time once the repo is initialized</li>
+					</ul>
+					<pre>
+						<code class="language-bash"># Update dependencies
+flatpak-builder --stop-at=$module --download-only \
+	--ccache --force-clean --state-dir=$stateDir \
+	$repoDir $manifestPath</code>
+	<code class="language-bash"># Build dependencies
+flatpak-builder --stop-at=$module --build-only \
+	--ccache --force-clean --state-dir=$stateDir \
+	--disable-download --keep-build-dirs \
+	$repoDir $manifestPath</code>
+					</pre>
+				</section>
+				<section>
+					<h5>Build the application</h5>
+					<br />
+
+					<ul>
+						<li>Buildsystem dependant</li>
+						<li>Handling <code>$PATH</code> / <code>LD_LIBRARY_PATH</code> / <code>PKG_CONFIG_PATH</code>
+						</li>
+						<li>Handling the manifest and module's <code>build-options</code></li>
+						<li>Post install</li>
+					</ul>
+				</section>
+				<section>
+					<h5>Run the application</h5>
+					<br />
+					<ul>
+						<li>Make sure to skip <code>--metadata</code> from <code>finish-args</code></li>
+					</ul>
+					<pre>
+						<code class="language-bash">flatpak build --with-appdir --allow=devel \
+	--talk-name=org.freedesktop.portal.* \
+	--talk-name=org.a11y.Bus \
+	$finishArgs \
+	$repoDir $commandToRun</code>
+					</pre>
+				</section>
+			</section>
+
+			<section>
+				<section>
+					<h3>Edge cases</h3>
+				</section>
+				<section>
+					<h6>Sandboxed IDE</h6>
+					<ul>
+						<li>Use <code>flatpak-spawn</code> for running <code>flatpak</code>/<code>flatpak-builder</code>
+							on the host</li>
+						<li>Use <code>org.flatpak.Builder</code> Flatpak if installed, especially on OSTree based OSs
+						</li>
+					</ul>
+				</section>
+				<section>
+					<h6>Ensure the documents portal is running</h6>
+				</section>
+				<section>
+					<h6>Mounting fonts</h6>
+				</section>
+				<section>
+					<h6>Proxying host environment variables</h6>
+				</section>
+				<section>
+					<h6>Proxying the accessibility bus</h6>
+				</section>
+			</section>
+			<section>
+				<section>
+					<h3>Bonus points</h3>
+				</section>
+				<section>
+					<h6>Integrate the SDK extensions</h6>
+					<ul>
+						<li>Running Language service providers, ...etc</li>
+						<li>Avoids having to install anything on the host</li>
+					</ul>
+				</section>
+				<section>
+					<h6>Runtime terminal</h6>
+				</section>
+				<section>
+					<h6>Build terminal</h6>
+				</section>
+				<section>
+					<h6>Export as a bundle</h6>
+				</section>
+			</section>
+			<section>
+				<section>
+					<h3>Examples</h3>
+				</section>
+				<section>
+					<h6>GNOME Builder</h6>
+					<a
+						href="https://flathub.org/apps/details/org.gnome.Builder">https://flathub.org/apps/details/org.gnome.Builder</a>
+					<br /> <br />
+
+					<ul>
+						<li>The best container-integrated IDE</li>
+						<li>Smooth integration with the LSP using SDK extensions</li>
+					</ul>
+				</section>
+				<section>
+					<h6>Flatpak VSCode</h6>
+					<a
+						href="https://github.com/bilelmoussaoui/flatpak-vscode">https://github.com/bilelmoussaoui/flatpak-vscode</a>
+					<br /> <br />
+
+					<ul>
+						<li>Inspired by GNOME Builder</li>
+						<li>Integrates with other VSCode extensions like rust-analyzer, meson, vala</li>
+					</ul>
+				</section>
+				<section>
+					<h6>fenv</h6>
+					<a href="https://gitlab.gnome.org/ZanderBrown/fenv">https://gitlab.gnome.org/ZanderBrown/fenv</a>
+					<br /> <br />
+
+					<ul>
+						<li>Inspired by Flatpak VSCode</li>
+						<li>CLI friendly</li>
+						<li>Still on a beta phase</li>
+					</ul>
+				</section>
+			</section>
+			<section>
+				<section>
+					<h3>Open questions</h3>
+				</section>
+				<section>
+					<h6>Handle a lot of corner cases</h6>
+				</section>
+				<section>
+					Shared cache between various IDEs
+				</section>
+				<section>
+					<h6>Duplicate parts of flatpak-builder for building the application</h6>
+				</section>
+				<section>
+					<h6>Duplicate parts of flatpak for running the application</h6>
+				</section>
+				<section>
+					<h6>Potential solutions</h6>
+					<br /> <br />
+					<ul>
+						<li>
+							libflatpak-builder maybe?
+						</li>
+						<li>
+							Simpler CLI wrapper that various IDEs could make use of
+						</li>
+					</ul>
+				</section>
+			</section>
+			<section>
+				<h3>Any questions?</h3>
+			</section>
+		</div>
+	</div>
+
+	<script src="dist/reveal.js"></script>
+	<script src="plugin/notes/notes.js"></script>
+	<script src="plugin/highlight/highlight.js"></script>
+	<script>
+		// More info about initialization & config:
+		// - https://revealjs.com/initialization/
+		// - https://revealjs.com/config/
+		Reveal.initialize({
+			hash: true,
+			plugins: [RevealHighlight]
+		});
+	</script>
+</body>
+
+</html>
