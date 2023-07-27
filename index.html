@@ -5,11 +5,11 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-	<title>Integrate Flatpak to your favorite IDE</title>
+	<title>Rust: The state of the bindings</title>
 
 	<link rel="stylesheet" href="dist/reset.css">
 	<link rel="stylesheet" href="dist/reveal.css">
-	<link rel="stylesheet" href="dist/theme/night.css">
+	<link rel="stylesheet" href="dist/theme/simple.css">
 	<link rel="stylesheet" href="plugin/highlight/atom-one-dark-reasonable.min.css">
 </head>
 
@@ -17,221 +17,168 @@
 	<div class="reveal">
 		<div class="slides">
 			<section>
-				<h3>Integrate Flatpak to your favorite IDE</h3>
-				<span>Bilal Elmoussaoui <a href="mailto:bil.elmoussaoui@gmail.com">bil.elmoussaoui@gmail.com</a></span>
+				<h3>Rust: The state of the bindings</h3>
+				<p>Slides at <a href="https://bilelmoussaoui.github.io/guadec-2023/">bilelmoussaoui.github.io/guadec-2023/</a></p>
 			</section>
 			<section>
-				<section>
-					<h3>The Story</h3>
-				</section>
-				<section>
-					<center>
-						<div style="width:720px;max-width:100%;">
-							<div style="height:0;padding-bottom:56.67%;position:relative;"><iframe width="360"
-									height="204" style="position:absolute;top:0;left:0;width:100%;height:100%;"
-									frameBorder="0" src="https://imgflip.com/embed/7fm4s"></iframe></div>
-						</div>
-					</center>
-				</section>
+				<h6>Presentation</h6>
+				<ul>
+					<li>Software Engineer at Red Hat</li>
+					<li>GNOME Developer</li>
+					<li>Maintains too many Rust crates</li>
+				</ul>
 			</section>
 			<section>
-				<section>
-					<h3>The Process</h3>
-				</section>
-				<section>
-					<h5>Detect and parse the manifest</h5>
-					<br />
-
-					<ul>
-						<li>JSON or YAML files</li>
-						<li>Conforms to <a
-								href="https://github.com/flatpak/flatpak-builder/blob/main/data/flatpak-manifest.schema.json">Flatpak
-								Builder scheme</a></li>
-						<li>Contains at least the <code>id</code> and <code>modules</code> attributes</li>
-					</ul>
-				</section>
-				<section>
-					<h5>Check if the required SDKs are installed</h5>
-					<br />
-					<ul>
-						<li>Ideally offer to install them for the user</li>
-						<li>Complexity of handling <code>--user</code> and <code>--system</code> installations</li>
-					</ul>
-					<pre>
-						<code class="language-bash">flatpak list --runtime --columns=application,branch</code>
-					</pre>
-				</section>
-				<section>
-					<h5>Initialize the Flatpak repository</h5>
-					<br />
-					<pre>
-						<code class="language-bash">flatpak build-init $repoDir $appID $SDK \
-				$runtime $runtimeVersion</code>
-					</pre>
-
-				</section>
-				<section>
-					<h5>Update and build dependencies</h5>
-					<br />
-
-					<ul>
-						<li>Assume the latest module is the application</li>
-						<li>Make use of <code>--stop-at=$module</code></li>
-						<li>Allow to run any time once the repo is initialized</li>
-					</ul>
-					<pre>
-						<code class="language-bash"># Update dependencies
-flatpak-builder --stop-at=$module --download-only \
-	--ccache --force-clean --state-dir=$stateDir \
-	$repoDir $manifestPath</code>
-	<code class="language-bash"># Build dependencies
-flatpak-builder --stop-at=$module --build-only \
-	--ccache --force-clean --state-dir=$stateDir \
-	--disable-download --keep-build-dirs \
-	$repoDir $manifestPath</code>
-					</pre>
-				</section>
-				<section>
-					<h5>Build the application</h5>
-					<br />
-
-					<ul>
-						<li>Buildsystem dependant</li>
-						<li>Handling <code>$PATH</code> / <code>LD_LIBRARY_PATH</code> / <code>PKG_CONFIG_PATH</code>
-						</li>
-						<li>Handling the manifest and module's <code>build-options</code></li>
-						<li>Post install</li>
-					</ul>
-				</section>
-				<section>
-					<h5>Run the application</h5>
-					<br />
-					<ul>
-						<li>Make sure to skip <code>--metadata</code> from <code>finish-args</code></li>
-					</ul>
-					<pre>
-						<code class="language-bash">flatpak build --with-appdir --allow=devel \
-	--talk-name=org.freedesktop.portal.* \
-	--talk-name=org.a11y.Bus \
-	$finishArgs \
-	$repoDir $commandToRun</code>
-					</pre>
-				</section>
-			</section>
-
-			<section>
-				<section>
-					<h3>Edge cases</h3>
-				</section>
-				<section>
-					<h6>Sandboxed IDE</h6>
-					<ul>
-						<li>Use <code>flatpak-spawn</code> for running <code>flatpak</code>/<code>flatpak-builder</code>
-							on the host</li>
-						<li>Use <code>org.flatpak.Builder</code> Flatpak if installed, especially on OSTree based OSs
-						</li>
-					</ul>
-				</section>
-				<section>
-					<h6>Ensure the documents portal is running</h6>
-				</section>
-				<section>
-					<h6>Mounting fonts</h6>
-				</section>
-				<section>
-					<h6>Proxying host environment variables</h6>
-				</section>
-				<section>
-					<h6>Proxying the accessibility bus</h6>
-				</section>
+				<h6>What are the Rust bindings?</h6>
+				<ul>
+					<li>Wrappers of the GObject based C libraries</li>
+					<li>Safe and convenient to use</li>
+					<li>Mostly automatically generated code with <a href="https://github.com/gtk-rs/gir">gir</a></li>
+				</ul>
 			</section>
 			<section>
-				<section>
-					<h3>Bonus points</h3>
-				</section>
-				<section>
-					<h6>Integrate the SDK extensions</h6>
-					<ul>
-						<li>Running Language service providers, ...etc</li>
-						<li>Avoids having to install anything on the host</li>
-					</ul>
-				</section>
-				<section>
-					<h6>Runtime terminal</h6>
-				</section>
-				<section>
-					<h6>Build terminal</h6>
-				</section>
-				<section>
-					<h6>Export as a bundle</h6>
-				</section>
+				<h6>Which bindings exists?</h6>
+				<ul>
+					<li><a href="https://github.com/gtk-rs/gtk-rs-core/">gtk-rs-core</a>: glib/gio, pango, cairo,
+						graphene</li>
+					<li><a href="https://github.com/gtk-rs/gtk4-rs">gtk4-rs</a>: libadwaita, gtksourceview, libshumate,
+						webkit6, libpanel, libspelling</li>
+					<li><a href="https://github.com/gtk-rs/gtk3-rs">gtk3-rs</a>: in maintenance mode</li>
+					<li><a href="https://gitlab.gnome.org/World/Rust">others</a>: poppler, soup3...</li>
+				</ul>
 			</section>
 			<section>
-				<section>
-					<h3>Examples</h3>
-				</section>
-				<section>
-					<h6>GNOME Builder</h6>
-					<a
-						href="https://flathub.org/apps/details/org.gnome.Builder">https://flathub.org/apps/details/org.gnome.Builder</a>
-					<br /> <br />
-
-					<ul>
-						<li>The best container-integrated IDE</li>
-						<li>Smooth integration with the LSP using SDK extensions</li>
-					</ul>
-				</section>
-				<section>
-					<h6>Flatpak VSCode</h6>
-					<a
-						href="https://github.com/bilelmoussaoui/flatpak-vscode">https://github.com/bilelmoussaoui/flatpak-vscode</a>
-					<br /> <br />
-
-					<ul>
-						<li>Inspired by GNOME Builder</li>
-						<li>Integrates with other VSCode extensions like rust-analyzer, meson, vala</li>
-					</ul>
-				</section>
-				<section>
-					<h6>fenv</h6>
-					<a href="https://gitlab.gnome.org/ZanderBrown/fenv">https://gitlab.gnome.org/ZanderBrown/fenv</a>
-					<br /> <br />
-
-					<ul>
-						<li>Inspired by Flatpak VSCode</li>
-						<li>CLI friendly</li>
-						<li>Still on a beta phase</li>
-					</ul>
-				</section>
+				<h6>Who uses them?</h6>
+				<ul>
+					<li>Approximately 35 <a href="https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs">GStreamer
+							elements</a></li>
+					<li><a href="https://gitlab.gnome.org/GNOME/librsvg/">librsvg</a>, <a
+							href="https://gitlab.gnome.org/malureau/rdw">RDW</a>, <a
+							href="https://github.com/coreos/rpm-ostree">rpm-ostree</a></li>
+					<li>A lot of GTK apps: <a href="https://github.com/paper-plane-developers/paper-plane">Paper
+							Plane</a>, <a href="https://flathub.org/apps/dev.alextren.Spot">Spot</a>, <a
+							href="https://flathub.org/apps/org.gnome.Loupe">Loupe</a>,
+						<a href="https://github.com/marhkb/pods">Pods</a>,
+						<a href="https://flathub.org/en-GB/apps/io.bassi.Amberol">Amberol</a>,
+						<a href="https://flathub.org/apps/org.gnome.Snapshot">Snapshot</a>...
+					</li>
+				</ul>
 			</section>
 			<section>
-				<section>
-					<h3>Open questions</h3>
-				</section>
-				<section>
-					<h6>Handle a lot of corner cases</h6>
-				</section>
-				<section>
-					Shared cache between various IDEs
-				</section>
-				<section>
-					<h6>Duplicate parts of flatpak-builder for building the application</h6>
-				</section>
-				<section>
-					<h6>Duplicate parts of flatpak for running the application</h6>
-				</section>
-				<section>
-					<h6>Potential solutions</h6>
-					<br /> <br />
-					<ul>
-						<li>
-							libflatpak-builder maybe?
-						</li>
-						<li>
-							Simpler CLI wrapper that various IDEs could make use of
-						</li>
-					</ul>
-				</section>
+				<h6>Who uses them?</h6>
+				<img src="circle-apps.png" />
+			</section>
+			<section>
+				<h6>Who uses them?</h6>
+				<img src="screenshot.png" />
+			</section>
+			<section>
+				<h6>What about the rest of the platform?</h6>
+				<ul>
+					<li>
+						<ul>
+							<li>
+								<a href="https://github.com/dbus2/zbus">zbus</a>
+							</li>
+					</li>
+					<li>
+						<a href="https://github.com/dbus2/busd">busd</a>: D-Bus broker
+					</li>
+					</li>
+				</ul>
+				<li><a href="https://github.com/bilelmoussaoui/ashpd/">ASHPD</a>: Portals wrapper</li>
+				<li><a href="https://github.com/bilelmoussaoui/oo7">OO7</a>: Replacement of libsecret</li>
+				<li><a href="https://gitlab.gnome.org/GNOME/snapshot/-/tree/main/aperture">libaperture</a>: A GTK
+					widget for cameras</li>
+				</ul>
+			</section>
+			<section>
+				<h6>What changed since last time?</h6>
+				<p>GtkBuilderScope integration</p>
+				<pre>
+					<code>#[gtk::template_callbacks]
+impl MyWidget {
+	#[template_callback]
+	fn button_clicked(&self, button: &amp;gtk::Button) {
+		println!("button clicked!")
+	}
+
+	#[template_callback]
+	async fn some_other_callback(&self, button: &amp;gtk::Button) {
+		use ashpd::desktop::screenshot::Color;
+		let color = Color::request().send().await.unwrap().response().unwrap();
+		println!("{:#?}", color)
+	}
+}</code>
+				</pre>
+			</section>
+			<section>
+				<h6>What changed since last time?</h6>
+				<p>Procedural macro for generating GObject properties boilerplate</p>
+				<pre>
+					<code>#[derive(glib::Properties, Default)]
+#[properties(wrapper_type = super::CustomObject)]
+pub struct CustomObject {
+	#[property(get, set = Self::set_prop, construct)]
+	prop: RefCell&lt;String&gt;,
+}
+
+#[glib::derived_properties]
+impl ObjectImpl for CustomObject {}
+
+impl CustomObject {
+	fn set_prop(&self, value: &amp;str) {
+		*self.prop.borrow_mut() = format!("custom set: {}", value);
+	}
+}</code>
+				</pre>
+			</section>
+			<section>
+				<h6>What changed since last time?</h6>
+				<p>gdk4-win32 bindings</p>
+			</section>
+			<section>
+				<h6>What changed since last time?</h6>
+<p>Reduced allocations by introductions various collections types:
+						<code>glib::List</code>,<code>glib::SList</code>,
+						<code>glib::Strv</code></p>
+			</section>
+			<section>
+				<h6>What changed since last time?</h6>
+				<ul>
+					<li>Improved documentations
+						<ul>
+							<li>List of properties and signals</li>
+							<li>Virtual and class methods support</li>
+						</ul>
+					</li>
+					<li>More chapters in the gtk4-rs book</li>
+				</ul>
+			</section>
+			<section>
+				<h6>What to look forward to?</h6>
+				<ul>
+					<li>More procedural macros: signals, improved <code>glib::wrapper!</code></li>
+					<li>i18n support without going through gettext-rs</li>
+					<li>Reduce allocations when interacting with strings / collections</li>
+					<li>Support the new introspection annotations</li>
+				</ul>
+			</section>
+			<section>
+				<h6>What to look forward to?</h6>
+				<h2>A new release!</h2>
+			</section>
+			<section>
+				<h6>Reach out</h6>
+				<ul>
+					<li>Website: <a href="https://gtk-rs.org">https://gtk-rs.org</a></li>
+					<li>GitHub: <a href="https://github.com/gtk-rs">https://github.com/gtk-rs</a></li>
+					<li>Matrix: <a href="https://matrix.to/#/#rust:gnome.org">https://matrix.to/#/#rust:gnome.org</a>
+					</li>
+				</ul>
+			</section>
+			<section>
+				<h3>Thank you!</h3>
 			</section>
 			<section>
 				<h3>Any questions?</h3>
@@ -240,7 +187,6 @@ flatpak-builder --stop-at=$module --build-only \
 	</div>
 
 	<script src="dist/reveal.js"></script>
-	<script src="plugin/notes/notes.js"></script>
 	<script src="plugin/highlight/highlight.js"></script>
 	<script>
 		// More info about initialization & config:
